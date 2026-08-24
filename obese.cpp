@@ -461,6 +461,8 @@ std::vector<std::string> parse_depends(const std::string& raw) {
         size_t e = part.find_last_not_of(" \t");
         if (b == std::string::npos) continue;
         part = part.substr(b, e - b + 1);
+        size_t colon = part.find(':');
+        if (colon != std::string::npos) part = part.substr(0, colon);  // drop :any / :amd64
         if (!part.empty()) out.push_back(part);
     }
     return out;
@@ -1159,7 +1161,9 @@ public:
             oops(tr("'%1' is not a file", {deb_path}));
             return 1;
         }
-        std::string tmp = "/tmp/obese-deb2ob-" + rnd_str(8);
+        const char* td = std::getenv("TMPDIR");
+        std::string base = (td && *td) ? td : "/tmp";
+        std::string tmp = base + "/obese-deb2ob-" + rnd_str(8);
         std::string extract = tmp + "/extracted";
         std::string pkgdir = tmp + "/pkg";
         mkdir_p(extract);
