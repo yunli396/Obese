@@ -7,9 +7,9 @@
 *.ob
 
 # local test packages (way too big for github)
-/repo/
+/repo
 
 # editor junk
 *~
 *.swp
-/repo/
+/repo
