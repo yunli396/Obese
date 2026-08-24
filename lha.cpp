@@ -749,7 +749,7 @@ bool archive_write(const std::string& out_path, const std::vector<Member>& membe
             uint16_t len = 5;
             le16(exts, len);
             exts.push_back(0x50);
-            le16(exts, static_cast<uint16_t>((m.mode & 07777) | 0100000));
+            le16(exts, static_cast<uint16_t>((m.mode & 07777) | (m.mode & 0170000)));
         }
         le16(exts, 0);  // end of extended headers
 
@@ -808,7 +808,7 @@ static int read_one_member(const std::string& data, size_t& pos, Member& m,
             if (type == 0x01) {
                 name.assign(reinterpret_cast<const char*>(h + ext + 3), elen - 3);
             } else if (type == 0x50 && elen >= 5) {
-                mode = rd16(h + ext + 3) & 07777;
+                mode = rd16(h + ext + 3) & 0177777;
             } else if (type == 0x60) {
                 m.pkg_name.assign(reinterpret_cast<const char*>(h + ext + 3), elen - 3);
             } else if (type == 0x61) {

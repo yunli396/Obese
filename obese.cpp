@@ -478,10 +478,10 @@ void collect_files(const std::string& base, const std::string& dir,
             continue;
         std::string full = dir + "/" + e->d_name;
         struct stat st;
-        if (stat(full.c_str(), &st) != 0) continue;
+        if (lstat(full.c_str(), &st) != 0) continue;
         if (S_ISDIR(st.st_mode)) {
             collect_files(base, full, out);
-        } else if (S_ISREG(st.st_mode)) {
+        } else if (S_ISREG(st.st_mode) || S_ISLNK(st.st_mode)) {
             out.push_back(full.substr(base.size() + 1));
         }
     }
@@ -739,15 +739,26 @@ public:
         uint64_t total = 0;
         for (auto& rel : files) {
             std::string full = src + "/" + rel;
-            std::string data = file_get(full);
             struct stat st;
-            stat(full.c_str(), &st);
+            lstat(full.c_str(), &st);
             lha::Member m;
             m.name = rel;
-            m.mode = st.st_mode & 07777;
-            m.data.assign(data.begin(), data.end());
+            if (S_ISLNK(st.st_mode)) {
+                char target[4096];
+                ssize_t n = readlink(full.c_str(), target, sizeof(target) - 1);
+                if (n >= 0) {
+                    target[n] = 0;
+                    m.mode = S_IFLNK | 0777;
+                    std::string ts(target);
+                    m.data.assign(ts.begin(), ts.end());
+                }
+            } else {
+                std::string data = file_get(full);
+                m.mode = st.st_mode & 07777;
+                m.data.assign(data.begin(), data.end());
+            }
             members.push_back(std::move(m));
-            total += data.size();
+            total += m.data.size();
         }
 
         std::string err;
@@ -867,10 +878,16 @@ public:
         for (auto& pf : members) {
             std::string full = dir + "/" + pf.name;
             mkdir_p(full.substr(0, full.find_last_of('/')));
-            std::ofstream out(full, std::ios::binary | std::ios::trunc);
-            out.write(reinterpret_cast<const char*>(pf.data.data()), pf.data.size());
-            out.close();
-            chmod(full.c_str(), pf.mode);
+            if ((pf.mode & S_IFMT) == S_IFLNK) {
+                std::string target(pf.data.begin(), pf.data.end());
+                if (file_exists(full)) unlink(full.c_str());
+                symlink(target.c_str(), full.c_str());
+            } else {
+                std::ofstream out(full, std::ios::binary | std::ios::trunc);
+                out.write(reinterpret_cast<const char*>(pf.data.data()), pf.data.size());
+                out.close();
+                chmod(full.c_str(), pf.mode);
+            }
             installed.push_back(pf.name);
             bytes += pf.data.size();
             if (pf.name.find("/bin/") != std::string::npos ||
