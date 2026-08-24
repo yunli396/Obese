@@ -1696,6 +1696,15 @@ int main(int argc, char** argv) {
     if (lang_code.empty()) lang_code = "en";
     g_lang.load(lang_code, root);
 
+    // absolutize root so relative symlinks inside the store resolve correctly
+    if (root.empty() || root[0] != '/') {
+        char cwd[4096];
+        if (getcwd(cwd, sizeof(cwd))) {
+            if (root.empty()) root = cwd;
+            else root = std::string(cwd) + "/" + root;
+        }
+    }
+
     std::string cmd = args.empty() ? "" : args[0];
     std::vector<std::string> rest = args.empty()
                                         ? std::vector<std::string>()
