@@ -64,6 +64,7 @@
 '%1' is not installed or has no runnable binary='%1' is not installed or has no runnable binary
 '%1' is not installed, so there is nothing to roll back='%1' is not installed, so there is nothing to roll back
 ...and of course '%1' is not even available. recommendations, am i right?=...and of course '%1' is not even available. recommendations, am i right?
+/opt/obese/bin prepended to PATH (as root). sandbox root paths stay out of PATH.=/opt/obese/bin prepended to PATH (as root). sandbox root paths stay out of PATH.
 KB=KB
 a package manager. local, offline, self-contained, written in C++.=a package manager. local, offline, self-contained, written in C++.
 aborted. that was the right call.=aborted. that was the right call.

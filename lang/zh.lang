@@ -58,6 +58,7 @@ notes:=说明：
   - that is all. do not look for more. there is no more.=  - 就这些。别再找了。没有更多了。
 
 system root needs root. relocate with --root=<dir> to live dangerously.=系统根目录需要 root。传 --root=<目录> 来作死。
+/opt/obese/bin prepended to PATH (as root). sandbox root paths stay out of PATH.=（以 root 运行）已把 /opt/obese/bin 加到 PATH。沙盒根目录的路径不会加进去。
 '%1' is not a directory='%1' 不是目录
 read %1 deps from %2=从 %2 读取了 %1 个依赖
 cannot find dependency '%1' to bundle. the package will be incomplete, as usual.=找不到依赖 '%1' 可捆绑。包会不完整，一如既往。

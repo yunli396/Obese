@@ -1760,6 +1760,17 @@ int main(int argc, char** argv) {
         oops(tr("system root needs root. relocate with --root=<dir> to live dangerously."));
         return 1;
     }
+
+    // as root, the system toolchain lives in /opt/obese/bin: expose it on PATH.
+    // the sandbox root's bin (--root=...) is deliberately NOT added.
+    if (geteuid() == 0 && root == "/opt/obese") {
+        const char* oldpath = std::getenv("PATH");
+        std::string np = "/opt/obese/bin";
+        if (oldpath && *oldpath) np += ":" + std::string(oldpath);
+        setenv("PATH", np.c_str(), 1);
+        meh(tr("/opt/obese/bin prepended to PATH (as root). sandbox root paths stay out of PATH.", {}));
+    }
+
     mkdir_p(root + "/repo");
     mkdir_p(root + "/pkgs");
 
