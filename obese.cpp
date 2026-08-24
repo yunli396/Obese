@@ -890,8 +890,10 @@ public:
             }
             installed.push_back(pf.name);
             bytes += pf.data.size();
-            if (pf.name.find("/bin/") != std::string::npos ||
-                pf.name.rfind("bin/", 0) == 0) {
+            if ((pf.name.find("/bin/") != std::string::npos ||
+                 pf.name.rfind("bin/", 0) == 0) &&
+                pf.name.find("usr/share/") == std::string::npos) {
+                // skip wrapper scripts under usr/share; usr/bin is the real binary
                 std::string target = m_store.bin() + "/" +
                                      pf.name.substr(pf.name.find_last_of('/') + 1);
                 mkdir_p(m_store.bin());
