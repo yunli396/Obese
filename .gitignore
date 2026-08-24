@@ -1,0 +1,14 @@
+# binaries
+/obese
+/obese-server
+
+# build artifacts
+*.o
+*.ob
+
+# local test packages (way too big for github)
+/repo/
+
+# editor junk
+*~
+*.swp
