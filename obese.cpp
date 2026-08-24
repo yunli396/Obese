@@ -1136,6 +1136,48 @@ public:
                 break;
             }
         if (bin.empty()) {
+            // the common name may be alternatives-managed (gcc -> gcc-13,
+            // vim -> vim.basic). scan every installed package's usr/bin.
+            std::string best;
+            int best_score = -1;
+            std::string pkgs = m_store.root() + "/pkgs";
+            DIR* d = opendir(pkgs.c_str());
+            if (d) {
+                struct dirent* e;
+                while ((e = readdir(d)) != nullptr) {
+                    std::string pkg = e->d_name;
+                    if (pkg == "." || pkg == "..") continue;
+                    std::string bindir = m_store.pkg_dir(pkg) + "/usr/bin";
+                    DIR* bd = opendir(bindir.c_str());
+                    if (!bd) continue;
+                    struct dirent* be;
+                    while ((be = readdir(bd)) != nullptr) {
+                        std::string bn = be->d_name;
+                        if (bn == "." || bn == "..") continue;
+                        std::string full = bindir + "/" + bn;
+                        struct stat st;
+                        if (lstat(full.c_str(), &st) != 0) continue;
+                        if (!S_ISREG(st.st_mode) && !S_ISLNK(st.st_mode)) continue;
+                        int score = -1;
+                        if (bn == name) score = 100;
+                        else if (bn == "x86_64-linux-gnu-" + name ||
+                                 bn.rfind("x86_64-linux-gnu-" + name + "-", 0) == 0)
+                            score = 90;
+                        else if (bn.rfind(name + "-", 0) == 0 ||
+                                 bn.rfind(name + ".", 0) == 0)
+                            score = 80;
+                        if (score > best_score) {
+                            best_score = score;
+                            best = full;
+                        }
+                    }
+                    closedir(bd);
+                }
+                closedir(d);
+            }
+            if (best_score >= 80) bin = best;
+        }
+        if (bin.empty()) {
             oops(tr("'%1' is not installed or has no runnable binary", {name}));
             return 1;
         }
@@ -1695,6 +1737,15 @@ int main(int argc, char** argv) {
     }
     if (lang_code.empty()) lang_code = "en";
     g_lang.load(lang_code, root);
+
+    // absolutize root so relative symlinks inside the store resolve correctly
+    if (root.empty() || root[0] != '/') {
+        char cwd[4096];
+        if (getcwd(cwd, sizeof(cwd))) {
+            if (root.empty()) root = cwd;
+            else root = std::string(cwd) + "/" + root;
+        }
+    }
 
     std::string cmd = args.empty() ? "" : args[0];
     std::vector<std::string> rest = args.empty()
