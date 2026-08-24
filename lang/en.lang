@@ -82,6 +82,7 @@ cannot satisfy dependency '%1'. installed anyway (yolo)=cannot satisfy dependenc
 cannot write package: %1=cannot write package: %1
 checking for updates (local repo, then whatever source you are stuck with)=checking for updates (local repo, then whatever source you are stuck with)
 circular dependency detected on '%1'. installing anyway, as usual.=circular dependency detected on '%1'. installing anyway, as usual.
+circular dependency on '%1' detected. it is already being =circular dependency on '%1' detected. it is already being 
 commands:=commands:
 converted %1 (deb) -> %2 (ob) with %3 bundled dependenc(ies)=converted %1 (deb) -> %2 (ob) with %3 bundled dependenc(ies)
 converting deb to ob. yes, we finally need external tools (dpkg-deb, apt). the irony.=converting deb to ob. yes, we finally need external tools (dpkg-deb, apt). the irony.

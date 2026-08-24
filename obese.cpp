@@ -651,7 +651,7 @@ public:
         : m_store(root), m_telemetry(root) {}
 
     int pkg_cmd(const std::string& src, const std::string& out,
-                const std::string& meta_arg) {
+                const std::string& meta_arg, bool bundle_deps = true) {
         if (!is_dir(src)) {
             oops(tr("'%1' is not a directory", {src}));
             return 1;
@@ -685,6 +685,7 @@ public:
         // Bundle EVERY dependency, transitively, as .ob files right inside
         // this package (obese-deps/<name>.ob).
         int bundled = 0;
+        if (bundle_deps) {
         std::string out_dir = out.substr(0, out.find_last_of('/'));
         auto find_dep_ob = [&](const std::string& d) -> std::string {
             std::vector<std::string> cands = {out_dir + "/" + d,
@@ -726,6 +727,7 @@ public:
             dm.data.assign(depdata.begin(), depdata.end());
             members.push_back(std::move(dm));
             bundled++;
+        }
         }
 
         std::vector<std::string> files;
@@ -800,10 +802,16 @@ public:
 
         bool top = (m_install_depth == 0);
         m_install_depth++;
+        m_install_in_progress.insert(name);
 
         std::vector<std::string> deps = split_cs(meta["deps"]);
         for (auto& d : deps) {
             if (!file_exists(m_store.pkg_dir(d))) {
+                if (m_install_in_progress.count(d)) {
+                    meh(tr("circular dependency on '%1' detected. it is already being "
+                           "installed, we are not going in circles.", {d}));
+                    continue;
+                }
                 oops(tr("missing dependency '%1' for %2", {d, name}));
                 meh(tr("resolving '%1' (embedded first, then repo, then source)", {d}));
                 bool found = false;
@@ -907,6 +915,7 @@ public:
         m_store.log("installed " + name + " v" + header_version);
         fine(tr("installed %1 v%2 (%3 files)", {name, header_version, std::to_string(n)}));
         if (top) recommend_package(name, tr("now that %1 is installed", {name}));
+        m_install_in_progress.erase(name);
         m_install_depth--;
         return 0;
     }
@@ -1109,6 +1118,32 @@ public:
             oops(tr("'%1' is not installed or has no runnable binary", {name}));
             return 1;
         }
+        // point the dynamic loader at every installed package's lib dir
+        std::string lp;
+        std::string pkgs = m_store.root() + "/pkgs";
+        DIR* d = opendir(pkgs.c_str());
+        if (d) {
+            struct dirent* e;
+            static const char* subs[] = {"usr/lib/x86_64-linux-gnu", "usr/lib64",
+                                         "usr/lib", "lib/x86_64-linux-gnu", "lib"};
+            while ((e = readdir(d)) != nullptr) {
+                std::string pkg = e->d_name;
+                if (pkg == "." || pkg == "..") continue;
+                for (auto sub : subs) {
+                    std::string dir = m_store.pkg_dir(pkg) + "/" + sub;
+                    if (is_dir(dir)) {
+                        if (!lp.empty()) lp += ":";
+                        lp += dir;
+                    }
+                }
+            }
+            closedir(d);
+        }
+        if (!lp.empty()) {
+            const char* old = std::getenv("LD_LIBRARY_PATH");
+            if (old && *old) lp = std::string(old) + ":" + lp;
+            setenv("LD_LIBRARY_PATH", lp.c_str(), 1);
+        }
         std::vector<char*> argv;
         argv.push_back(const_cast<char*>(bin.c_str()));
         for (auto& a : args) argv.push_back(const_cast<char*>(a.c_str()));
@@ -1234,12 +1269,13 @@ public:
             }
         }
 
-        int rc2 = pkg_cmd(pkgdir, out, "");
+        int rc2 = pkg_cmd(pkgdir, out, "", with_deps);
         if (rc2 == 0) {
             fine(tr("converted %1 (deb) -> %2 (ob) with %3 bundled dependenc(ies)",
                     {deb_path, out, std::to_string(dl_ok)}));
         }
         m_deb_in_progress.erase(pkg_name);
+        system(("rm -rf " + shell_quote(tmp)).c_str());
         return rc2;
     }
 
@@ -1527,6 +1563,7 @@ private:
     int m_install_depth = 0;
     std::string m_deb_dep_cache;
     std::set<std::string> m_deb_in_progress;
+    std::set<std::string> m_install_in_progress;
 };
 
 void help_hint() {

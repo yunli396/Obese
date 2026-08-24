@@ -103,6 +103,7 @@ no Package field in '%1'='%1' 里没有 Package 字段
 downloading dependency '%1' (.deb) via apt=正在通过 apt 下载依赖 '%1'（.deb）
 could not download dependency '%1'. it will not be bundled.=无法下载依赖 '%1'。它不会被捆绑进来。
 circular dependency detected on '%1'. installing anyway, as usual.=检测到 '%1' 存在循环依赖。照常安装。
+circular dependency on '%1' detected. it is already being installed, we are not going in circles.=检测到 '%1' 存在循环依赖。它正在安装中，我们不会绕圈。circular dependency on '%1' detected. it is already being installed, we are not going in circles.=检测到 '%1' 存在循环依赖。它正在安装中，我们不会绕圈。
 reusing already-converted dependency '%1' (no, we will not re-download it)=复用已转换过的依赖 '%1'（不，我们不会再下载一遍）
 converted %1 (deb) -> %2 (ob) with %3 bundled dependenc(ies)=已把 %1（deb）转成 %2（ob），捆绑了 %3 个依赖
 usage: obese deb2ob <file.deb> [-o out.ob] [--no-deps]=用法：obese deb2ob <文件.deb> [-o out.ob] [--no-deps]
